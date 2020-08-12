@@ -1,0 +1,1610 @@
+=encoding utf8
+
+{content}
+
+=head1 EXAMPLES
+
+This distribution supports generating SQL statements using standard syntax or
+using database-specific syntax if a I<grammar> is specified. The following is a
+collection of examples covering the most common operations (using PostgreSQL
+syntax):
+
+=cut
+
+=head2 setup
+
+  use SQL::Engine;
+
+  my $sql = SQL::Engine->new(
+    grammar => 'postgres'
+  );
+
+  $sql->select(
+    from => {
+      table => 'people'
+    },
+    columns => [
+      { column => 'name' }
+    ]
+  );
+
+  $sql->operations->first->statement;
+
+  # SELECT "name" FROM "people"
+
+=cut
+
+=head2 select
+
+=over 4
+
+=item select example #1
+
+  $sql->select(
+    from => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ]
+  );
+
+=item select example #1 output
+
+  # SELECT * FROM "users"
+
+=item select example #2
+
+  $sql->select(
+    from => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'id'
+      },
+      {
+        column => 'name'
+      }
+    ]
+  );
+
+=item select example #2 output
+
+  # SELECT "id", "name" FROM "users"
+
+=item select example #3
+
+  $sql->select(
+    from => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ],
+    where => [
+      {
+        eq => [{column => 'id'}, {binding => 'id'}]
+      }
+    ]
+  );
+
+=item select example #3 output
+
+  # SELECT * FROM "users" WHERE "id" = ?
+
+=item select example #4
+
+  $sql->select(
+    from => {
+      table => 'users',
+      alias => 'u'
+    },
+    columns => [
+      {
+        column => '*',
+        alias => 'u'
+      }
+    ],
+    joins => [
+      {
+        with => {
+          table => 'tasklists',
+          alias => 't'
+        },
+        having => [
+          {
+            eq => [
+              {
+                column => 'id',
+                alias => 'u'
+              },
+              {
+                column => 'user_id',
+                alias => 't'
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    where => [
+      {
+        eq => [
+          {
+            column => 'id',
+            alias => 'u'
+          },
+          {
+            binding => 'id'
+          }
+        ]
+      }
+    ]
+  );
+
+=item select example #4 output
+
+  # SELECT "u".* FROM "users" "u"
+  # JOIN "tasklists" "t" ON "u"."id" = "t"."user_id" WHERE "u"."id" = ?
+
+=item select example #5
+
+  $sql->select(
+    from => {
+      table => 'tasklists'
+    },
+    columns => [
+      {
+        function => ['count', { column => 'user_id' }]
+      }
+    ],
+    group_by => [
+      {
+        column => 'user_id'
+      }
+    ]
+  );
+
+=item select example #5 output
+
+  # SELECT count("user_id") FROM "tasklists" GROUP BY "user_id"
+
+=item select example #6
+
+  $sql->select(
+    from => {
+      table => 'tasklists'
+    },
+    columns => [
+      {
+        function => ['count', { column => 'user_id' }]
+      }
+    ],
+    group_by => [
+      {
+        column => 'user_id'
+      }
+    ],
+    having => [
+      {
+        gt => [
+          {
+            function => ['count', { column => 'user_id' }]
+          },
+          1
+        ]
+      }
+    ]
+  );
+
+=item select example #6 output
+
+  # SELECT count("user_id") FROM "tasklists" GROUP BY "user_id" HAVING
+  # count("user_id") > 1
+
+=item select example #7
+
+  $sql->select(
+    from => {
+      table => 'tasklists'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ],
+    order_by => [
+      {
+        column => 'user_id'
+      }
+    ]
+  );
+
+=item select example #7 output
+
+  # SELECT * FROM "tasklists" ORDER BY "user_id"
+
+=item select example #8
+
+  $sql->select(
+    from => {
+      table => 'tasklists'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ],
+    order_by => [
+      {
+        column => 'user_id'
+      },
+      {
+        column => 'id',
+        sort => 'desc'
+      }
+    ]
+  );
+
+=item select example #8 output
+
+  # SELECT * FROM "tasklists" ORDER BY "user_id", "id" DESC
+
+=item select example #9
+
+  $sql->select(
+    from => {
+      table => 'tasks'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ],
+    rows => {
+      limit => 5
+    }
+  );
+
+=item select example #9 output
+
+  # SELECT * FROM "tasks" LIMIT 5
+
+=item select example #10
+
+  $sql->select(
+    from => {
+      table => 'tasks'
+    },
+    columns => [
+      {
+        column => '*'
+      }
+    ],
+    rows => {
+      limit => 5,
+      offset => 1
+    }
+  );
+
+=item select example #10 output
+
+  # SELECT * FROM "tasks" LIMIT 5, OFFSET 1
+
+=item select example #11
+
+  $sql->select(
+    from => [
+      {
+        table => 'tasklists',
+        alias => 't1'
+      },
+      {
+        table => 'tasks',
+        alias => 't2'
+      }
+    ],
+    columns => [
+      {
+        column => '*',
+        alias => 't1'
+      },
+      {
+        column => '*',
+        alias => 't1'
+      }
+    ],
+    where => [
+      {
+        eq => [
+          {
+            column => 'tasklist_id',
+            alias => 't2'
+          },
+          {
+            column => 'id',
+            alias => 't1'
+          }
+        ]
+      }
+    ]
+  );
+
+=item select example #11 output
+
+  # SELECT "t1".*, "t1".* FROM "tasklists" "t1", "tasks" "t2"
+  # WHERE "t2"."tasklist_id" = "t1"."id"
+
+=back
+
+=cut
+
+=head2 insert
+
+=over 4
+
+=item insert example #1
+
+  $sql->insert(
+    into => {
+      table => 'users'
+    },
+    values => [
+      {
+        value => undef
+      },
+      {
+        value => 'Rob Zombie'
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      }
+    ]
+  );
+
+=item insert example #1 output
+
+  # INSERT INTO "users" VALUES (NULL, 'Rob Zombie', now(), now(), now())
+
+=item insert example #2
+
+  $sql->insert(
+    into => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'id'
+      },
+      {
+        column => 'name'
+      },
+      {
+        column => 'created'
+      },
+      {
+        column => 'updated'
+      },
+      {
+        column => 'deleted'
+      }
+    ],
+    values => [
+      {
+        value => undef
+      },
+      {
+        value => 'Rob Zombie'
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      },
+      {
+        value => {
+          function => ['now']
+        }
+      }
+    ]
+  );
+
+=item insert example #2 output
+
+  # INSERT INTO "users" ("id", "name", "created", "updated", "deleted")
+  # VALUES (NULL, 'Rob Zombie', now(), now(), now())
+
+=item insert example #3
+
+  $sql->insert(
+    into => {
+      table => 'users'
+    },
+    default => 1
+  );
+
+=item insert example #3 output
+
+  # INSERT INTO "users" DEFAULT VALUES
+
+=item insert example #4
+
+  $sql->insert(
+    into => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      },
+      {
+        column => 'user_id'
+      }
+    ],
+    query => {
+      select => {
+        from => {
+          table => 'users'
+        },
+        columns => [
+          {
+            column => 'name'
+          },
+          {
+            column => 'id'
+          }
+        ]
+      }
+    }
+  );
+
+=item insert example #4 output
+
+  # INSERT INTO "users" ("name", "user_id") SELECT "name", "id" FROM "users"
+
+=item insert example #5
+
+  $sql->insert(
+    into => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      },
+      {
+        column => 'user_id'
+      }
+    ],
+    query => {
+      select => {
+        from => {
+          table => 'users'
+        },
+        columns => [
+          {
+            column => 'name'
+          },
+          {
+            column => 'id'
+          }
+        ],
+        where => [
+          {
+            'not-null' => {
+              column => 'deleted'
+            }
+          }
+        ]
+      }
+    }
+  );
+
+=item insert example #5 output
+
+  # INSERT INTO "users" ("name", "user_id") SELECT "name", "id" FROM "users"
+  # WHERE "deleted" IS NOT NULL
+
+=back
+
+=cut
+
+=head2 update
+
+=over 4
+
+=item update example #1
+
+  $sql->update(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'updated',
+        value => { function => ['now'] }
+      }
+    ]
+  );
+
+=item update example #1 output
+
+  # UPDATE "users" SET "updated" = now()
+
+=item update example #2
+
+  $sql->update(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name',
+        value => { function => ['concat', '[deleted]', ' ', { column => 'name' }] }
+      }
+    ],
+    where => [
+      {
+        'not-null' => {
+          column => 'deleted'
+        }
+      }
+    ]
+  );
+
+=item update example #2 output
+
+  # UPDATE "users" SET "name" = concat('[deleted]', ' ', "name") WHERE
+  # "deleted" IS NOT NULL
+
+=item update example #3
+
+  $sql->update(
+    for => {
+      table => 'users',
+      alias => 'u1'
+    },
+    columns => [
+      {
+        column => 'updated',
+        alias => 'u1',
+        value => { function => ['now'] }
+      }
+    ],
+    where => [
+      {
+        in => [
+          {
+            column => 'id',
+            alias => 'u1'
+          },
+          {
+            subquery => {
+              select => {
+                from => {
+                  table => 'users',
+                  alias => 'u2'
+                },
+                columns => [
+                  {
+                    column => 'id',
+                    alias => 'u2'
+                  }
+                ],
+                joins => [
+                  {
+                    with => {
+                      table => 'tasklists',
+                      alias => 't1'
+                    },
+                    having => [
+                      {
+                        eq => [
+                          {
+                            column => 'id',
+                            alias => 'u2'
+                          },
+                          {
+                            column => 'user_id',
+                            alias => 't1'
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                where => [
+                  {
+                    eq => [
+                      {
+                        column => 'id',
+                        alias => 'u2'
+                      },
+                      {
+                        binding => 'user_id'
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  );
+
+=item update example #3 output
+
+  # UPDATE "users" "u1" SET "u1"."updated" = now() WHERE "u1"."id" IN (SELECT
+  # "u2"."id" FROM "users" "u2" JOIN "tasklists" "t1" ON "u2"."id" =
+  # "t1"."user_id" WHERE "u2"."id" = ?)
+
+=back
+
+=cut
+
+=head2 delete
+
+=over 4
+
+=item delete example #1
+
+  $sql->delete(
+    from => {
+      table => 'tasklists'
+    }
+  );
+
+=item delete example #1 output
+
+  # DELETE FROM "tasklists"
+
+=item delete example #2
+
+  $sql->delete(
+    from => {
+      table => 'tasklists'
+    },
+    where => [
+      {
+        'not-null' => {
+          column => 'deleted'
+        }
+      }
+    ]
+  );
+
+=item delete example #2 output
+
+  # DELETE FROM "tasklists" WHERE "deleted" IS NOT NULL
+
+=back
+
+=cut
+
+=head2 table-create
+
+=over 4
+
+=item table-create example #1
+
+  $sql->table_create(
+    name => 'users',
+    columns => [
+      {
+        name => 'id',
+        type => 'integer',
+        primary => 1
+      }
+    ]
+  );
+
+=item table-create example #1 output
+
+  # CREATE TABLE "users" ("id" integer PRIMARY KEY)
+
+=item table-create example #2
+
+  $sql->table_create(
+    name => 'users',
+    columns => [
+      {
+        name => 'id',
+        type => 'integer',
+        primary => 1
+      },
+      {
+        name => 'name',
+        type => 'text',
+      },
+      {
+        name => 'created',
+        type => 'datetime',
+      },
+      {
+        name => 'updated',
+        type => 'datetime',
+      },
+      {
+        name => 'deleted',
+        type => 'datetime',
+      },
+    ]
+  );
+
+=item table-create example #2 output
+
+  # CREATE TABLE "users" ("id" integer PRIMARY KEY, "name" text, "created"
+  # timestamp(0) without time zone, "updated" timestamp(0) without time zone,
+  # "deleted" timestamp(0) without time zone)
+
+=item table-create example #3
+
+  $sql->table_create(
+    name => 'users',
+    columns => [
+      {
+        name => 'id',
+        type => 'integer',
+        primary => 1
+      },
+      {
+        name => 'name',
+        type => 'text',
+      },
+      {
+        name => 'created',
+        type => 'datetime',
+      },
+      {
+        name => 'updated',
+        type => 'datetime',
+      },
+      {
+        name => 'deleted',
+        type => 'datetime',
+      },
+    ],
+    temp => 1
+  );
+
+=item table-create example #3 output
+
+  # CREATE TEMPORARY TABLE "users" ("id" integer PRIMARY KEY, "name" text,
+  # "created" timestamp(0) without time zone, "updated" timestamp(0) without
+  # time zone, "deleted" timestamp(0) without time zone)
+
+=item table-create example #4
+
+  $sql->table_create(
+    name => 'people',
+    query => {
+      select => {
+        from => {
+          table => 'users'
+        },
+        columns => [
+          {
+            column => '*'
+          }
+        ]
+      }
+    }
+  );
+
+=item table-create example #4 output
+
+  # CREATE TABLE "people" AS SELECT * FROM "users"
+
+=back
+
+=cut
+
+=head2 table-drop
+
+=over 4
+
+=item table-drop example #1
+
+  $sql->table_drop(
+    name => 'people'
+  );
+
+=item table-drop example #1 output
+
+  # DROP TABLE "people"
+
+=item table-drop example #2
+
+  $sql->table_drop(
+    name => 'people',
+    condition => 'cascade'
+  );
+
+=item table-drop example #2 output
+
+  # DROP TABLE "people" CASCADE
+
+=back
+
+=cut
+
+=head2 table-rename
+
+=over 4
+
+=item table-rename example #1
+
+  $sql->table_rename(
+    name => {
+      old => 'peoples',
+      new => 'people'
+    }
+  );
+
+=item table-rename example #1 output
+
+  # ALTER TABLE "peoples" RENAME TO "people"
+
+=back
+
+=cut
+
+=head2 index-create
+
+=over 4
+
+=item index-create example #1
+
+  $sql->index_create(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      }
+    ]
+  );
+
+=item index-create example #1 output
+
+  # CREATE INDEX "index_users_name" ON "users" ("name")
+
+=item index-create example #2
+
+  $sql->index_create(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'email'
+      }
+    ],
+    unique => 1
+  );
+
+=item index-create example #2 output
+
+  # CREATE UNIQUE INDEX "unique_users_email" ON "users" ("email")
+
+=item index-create example #3
+
+  $sql->index_create(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      }
+    ],
+    name => 'user_name_index'
+  );
+
+=item index-create example #3 output
+
+  # CREATE INDEX "user_name_index" ON "users" ("name")
+
+=item index-create example #4
+
+  $sql->index_create(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'email'
+      }
+    ],
+    name => 'user_email_unique',
+    unique => 1
+  );
+
+=item index-create example #4 output
+
+  # CREATE UNIQUE INDEX "user_email_unique" ON "users" ("email")
+
+=item index-create example #5
+
+  $sql->index_create(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'login'
+      },
+      {
+        column => 'email'
+      }
+    ]
+  );
+
+=item index-create example #5 output
+
+  # CREATE INDEX "index_users_login_email" ON "users" ("login", "email")
+
+=back
+
+=cut
+
+=head2 index-drop
+
+=over 4
+
+=item index-drop example #1
+
+  $sql->index_drop(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      }
+    ]
+  );
+
+=item index-drop example #1 output
+
+  # DROP INDEX "index_users_name"
+
+=item index-drop example #2
+
+  $sql->index_drop(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'email'
+      }
+    ],
+    unique => 1
+  );
+
+=item index-drop example #2 output
+
+  # DROP INDEX "unique_users_email"
+
+=item index-drop example #3
+
+  $sql->index_drop(
+    for => {
+      table => 'users'
+    },
+    columns => [
+      {
+        column => 'name'
+      }
+    ],
+    name => 'user_email_unique'
+  );
+
+=item index-drop example #3 output
+
+  # DROP INDEX "user_email_unique"
+
+=back
+
+=cut
+
+=head2 column-change
+
+=over 4
+
+=item column-change example #1
+
+  $sql->column_change(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime',
+      nullable => 1
+    }
+  );
+
+=item column-change example #1 output
+
+  # BEGIN TRANSACTION
+  # ALTER TABLE "users" ALTER "accessed" TYPE timestamp(0) without time zone
+  # ALTER TABLE "users" ALTER "accessed" DROP NOT NULL
+  # ALTER TABLE "users" ALTER "accessed" DROP DEFAULT
+  # COMMIT
+
+=item column-change example #2
+
+  $sql->column_change(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime',
+      default => { function => ['now'] }
+    }
+  );
+
+=item column-change example #2 output
+
+  # BEGIN TRANSACTION
+  # ALTER TABLE "users" ALTER "accessed" TYPE timestamp(0) without time zone
+  # ALTER TABLE "users" ALTER "accessed" SET DEFAULT now()
+  # COMMIT
+
+=item column-change example #3
+
+  $sql->column_change(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime',
+      default => { function => ['now'] },
+      nullable => 1,
+    }
+  );
+
+=item column-change example #3 output
+
+  # BEGIN TRANSACTION
+  # ALTER TABLE "users" ALTER "accessed" TYPE timestamp(0) without time zone
+  # ALTER TABLE "users" ALTER "accessed" DROP NOT NULL
+  # ALTER TABLE "users" ALTER "accessed" SET DEFAULT now()
+  # COMMIT
+
+=back
+
+=cut
+
+=head2 column-create
+
+=over 4
+
+=item column-create example #1
+
+  $sql->column_create(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime'
+    }
+  );
+
+=item column-create example #1 output
+
+  # ALTER TABLE "users" ADD COLUMN "accessed" timestamp(0) without time zone
+
+=item column-create example #2
+
+  $sql->column_create(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime',
+      nullable => 1
+    }
+  );
+
+=item column-create example #2 output
+
+  # ALTER TABLE "users" ADD COLUMN "accessed" timestamp(0) without time zone
+  # NULL
+
+=item column-create example #3
+
+  $sql->column_create(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'accessed',
+      type => 'datetime',
+      nullable => 1,
+      default => {
+        function => ['now']
+      }
+    }
+  );
+
+=item column-create example #3 output
+
+  # ALTER TABLE "users" ADD COLUMN "accessed" timestamp(0) without time zone
+  # NULL DEFAULT now()
+
+=item column-create example #4
+
+  $sql->column_create(
+    for => {
+      table => 'users'
+    },
+    column => {
+      name => 'ref',
+      type => 'uuid',
+      primary => 1
+    }
+  );
+
+=item column-create example #4 output
+
+  # ALTER TABLE "users" ADD COLUMN "ref" uuid PRIMARY KEY
+
+=back
+
+=cut
+
+=head2 column-drop
+
+=over 4
+
+=item column-drop example #1
+
+  $sql->column_drop(
+    table => 'users',
+    column => 'accessed'
+  );
+
+=item column-drop example #1 output
+
+  # ALTER TABLE "users" DROP COLUMN "accessed"
+
+=back
+
+=cut
+
+=head2 column-rename
+
+=over 4
+
+=item column-rename example #1
+
+  $sql->column_rename(
+    for => {
+      table => 'users'
+    },
+    name => {
+      old => 'accessed',
+      new => 'accessed_at'
+    }
+  );
+
+=item column-rename example #1 output
+
+  # ALTER TABLE "users" RENAME COLUMN "accessed" TO "accessed_at"
+
+=back
+
+=cut
+
+=head2 constraint-create
+
+=over 4
+
+=item constraint-create example #1
+
+  $sql->constraint_create(
+    source => {
+      table => 'users',
+      column => 'profile_id'
+    },
+    target => {
+      table => 'profiles',
+      column => 'id'
+    }
+  );
+
+=item constraint-create example #1 output
+
+  # ALTER TABLE "users" ADD CONSTRAINT "foreign_users_profile_id_profiles_id"
+  # FOREIGN KEY ("profile_id") REFERENCES "profiles" ("id")
+
+=item constraint-create example #2
+
+  $sql->constraint_create(
+    source => {
+      table => 'users',
+      column => 'profile_id'
+    },
+    target => {
+      table => 'profiles',
+      column => 'id'
+    },
+    name => 'user_profile_id'
+  );
+
+=item constraint-create example #2 output
+
+  # ALTER TABLE "users" ADD CONSTRAINT "user_profile_id" FOREIGN KEY
+  # ("profile_id") REFERENCES "profiles" ("id")
+
+=item constraint-create example #3
+
+  $sql->constraint_create(
+    on => {
+      update => 'cascade',
+      delete => 'cascade'
+    },
+    source => {
+      table => 'users',
+      column => 'profile_id'
+    },
+    target => {
+      table => 'profiles',
+      column => 'id'
+    },
+    name => 'user_profile_id'
+  );
+
+=item constraint-create example #3 output
+
+  # ALTER TABLE "users" ADD CONSTRAINT "user_profile_id" FOREIGN KEY
+  # ("profile_id") REFERENCES "profiles" ("id") ON DELETE CASCADE ON UPDATE
+  # CASCADE
+
+=back
+
+=cut
+
+=head2 constraint-drop
+
+=over 4
+
+=item constraint-drop example #1
+
+  $sql->constraint_drop(
+    source => {
+      table => 'users',
+      column => 'profile_id'
+    },
+    target => {
+      table => 'profiles',
+      column => 'id'
+    }
+  );
+
+=item constraint-drop example #1 output
+
+  # ALTER TABLE "users" DROP CONSTRAINT "foreign_users_profile_id_profiles_id"
+
+=item constraint-drop example #2
+
+  $sql->constraint_drop(
+    source => {
+      table => 'users',
+      column => 'profile_id'
+    },
+    target => {
+      table => 'profiles',
+      column => 'id'
+    },
+    name => 'user_profile_id'
+  );
+
+=item constraint-drop example #2 output
+
+  # ALTER TABLE "users" DROP CONSTRAINT "user_profile_id"
+
+=back
+
+=cut
+
+=head2 database-create
+
+=over 4
+
+=item database-create example #1
+
+  $sql->database_create(
+    name => 'todoapp'
+  );
+
+=item database-create example #1 output
+
+  # CREATE DATABASE "todoapp"
+
+=back
+
+=cut
+
+=head2 database-drop
+
+=over 4
+
+=item database-drop example #1
+
+  $sql->database_drop(
+    name => 'todoapp'
+  );
+
+=item database-drop example #1 output
+
+  # DROP DATABASE "todoapp"
+
+=back
+
+=cut
+
+=head2 schema-create
+
+=over 4
+
+=item schema-create example #1
+
+  $sql->schema_create(
+    name => 'private',
+  );
+
+=item schema-create example #1 output
+
+  # CREATE SCHEMA "private"
+
+=back
+
+=cut
+
+=head2 schema-drop
+
+=over 4
+
+=item schema-drop example #1
+
+  $sql->schema_drop(
+    name => 'private',
+  );
+
+=item schema-drop example #1 output
+
+  # DROP SCHEMA "private"
+
+=back
+
+=cut
+
+=head2 schema-rename
+
+=over 4
+
+=item schema-rename example #1
+
+  $sql->schema_rename(
+    name => {
+      old => 'private',
+      new => 'restricted'
+    }
+  );
+
+=item schema-rename example #1 output
+
+  # ALTER SCHEMA "private" RENAME TO "restricted"
+
+=back
+
+=cut
+
+=head2 transaction
+
+=over 4
+
+=item transaction example #1
+
+  $sql->transaction(
+    queries => [
+      {
+        'table-create' => {
+          name => 'users',
+          columns => [
+            {
+              name => 'id',
+              type => 'integer',
+              primary => 1
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=item transaction example #1 output
+
+  # BEGIN TRANSACTION
+  # CREATE TABLE "users" ("id" integer PRIMARY KEY)
+  # COMMIT
+
+=item transaction example #2
+
+  $sql->transaction(
+    mode => [
+      'exclusive'
+    ],
+    queries => [
+      {
+        'table-create' => {
+          name => 'users',
+          columns => [
+            {
+              name => 'id',
+              type => 'integer',
+              primary => 1
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=item transaction example #2 output
+
+  # BEGIN TRANSACTION EXCLUSIVE
+  # CREATE TABLE "users" ("id" integer PRIMARY KEY)
+  # COMMIT
+
+=back
+
+=cut
+
+=head2 view-create
+
+=over 4
+
+=item view-create example #1
+
+  $sql->view_create(
+    name => 'active_users',
+    query => {
+      select => {
+        from => {
+          table => 'users'
+        },
+        columns => [
+          {
+            column => '*'
+          }
+        ],
+        where => [
+          {
+            'not-null' => {
+              column => 'deleted'
+            }
+          }
+        ]
+      }
+    }
+  );
+
+=item view-create example #1 output
+
+  # CREATE VIEW "active_users" AS SELECT * FROM "users" WHERE "deleted" IS NOT
+  # NULL
+
+=item view-create example #2
+
+  $sql->view_create(
+    name => 'active_users',
+    query => {
+      select => {
+        from => {
+          table => 'users'
+        },
+        columns => [
+          {
+            column => '*'
+          }
+        ],
+        where => [
+          {
+            'not-null' => {
+              column => 'deleted'
+            }
+          }
+        ]
+      }
+    },
+    temp => 1
+  );
+
+=item view-create example #2 output
+
+  # CREATE TEMPORARY VIEW "active_users" AS SELECT * FROM "users" WHERE
+  # "deleted" IS NOT NULL
+
+=back
+
+=cut
+
+=head2 view-drop
+
+=over 4
+
+=item view-drop example #1
+
+  $sql->view_drop(
+    name => 'active_users'
+  );
+
+=item view-drop example #1 output
+
+  # DROP VIEW "active_users"
+
+=back
+
+=cut
+
+=head1 AUTHOR
+
+Al Newkirk, C<awncorp@cpan.org>
+
+=head1 LICENSE
+
+Copyright (C) 2011-2019, Al Newkirk, et al.
+
+This is free software; you can redistribute it and/or modify it under the terms
+of the The Apache License, Version 2.0, as elucidated in the L<"license
+file"|https://github.com/iamalnewkirk/sql-engine/blob/master/LICENSE>.
+
+=head1 PROJECT
+
+L<Wiki|https://github.com/iamalnewkirk/sql-engine/wiki>
+
+L<Project|https://github.com/iamalnewkirk/sql-engine>
+
+L<Initiatives|https://github.com/iamalnewkirk/sql-engine/projects>
+
+L<Milestones|https://github.com/iamalnewkirk/sql-engine/milestones>
+
+L<Contributing|https://github.com/iamalnewkirk/sql-engine/blob/master/CONTRIBUTE.md>
+
+L<Issues|https://github.com/iamalnewkirk/sql-engine/issues>
+
+=cut
