@@ -43,6 +43,12 @@ has columns => (
   opt => 1
 );
 
+has constraints => (
+  is => 'ro',
+  isa => 'ArrayRef[HashRef]',
+  opt => 1
+);
+
 has query => (
   is => 'ro',
   isa => 'HashRef',
@@ -68,6 +74,10 @@ method data() {
 
   if ($self->columns) {
     $schema->{"columns"} = $self->columns;
+  }
+
+  if ($self->constraints) {
+    $schema->{"constraints"} = $self->constraints;
   }
 
   if ($self->query) {

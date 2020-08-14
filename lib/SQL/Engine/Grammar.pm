@@ -980,10 +980,71 @@ method table_create(HashRef $data) {
     ($data->{safe} ? $self->term(qw(if not exists)) : ()),
     $self->name($data->{name});
 
+  # body
+  my $body = [];
+
   # columns
   if (my $columns = $data->{columns}) {
-    push @$sql, sprintf('(%s)', join ', ',
-      map $self->column_specification($_), @$columns);
+    push @$body, map $self->column_specification($_), @$columns;
+  }
+
+  # constraints
+  if (my $constraints = $data->{constraints}) {
+    # unique
+    for my $constraint (grep {$_->{unique}} @{$constraints}) {
+      if (my $unique = $constraint->{unique}) {
+        my $name = $self->index_name({
+          for => $data->{for},
+          name => $unique->{name},
+          columns => [map +{column => $_}, @{$unique->{columns}}],
+          unique => 1,
+        });
+        push @$body, join ' ', $self->term('constraint'), $name,
+          $self->term('unique'), sprintf '(%s)', join ', ',
+          map $self->name($_), @{$unique->{columns}};
+      }
+    }
+    # foreign
+    for my $constraint (grep {$_->{foreign}} @{$constraints}) {
+      if (my $foreign = $constraint->{foreign}) {
+        my $name = $self->constraint_name({
+          source => {
+            table => $data->{name},
+            column => $foreign->{column}
+          },
+          target => $foreign->{reference},
+          name => $foreign->{name}
+        });
+        push @$body, join ' ', $self->term('constraint'), $name,
+          $self->term(qw(foreign key)),
+          sprintf('(%s)', $self->name($foreign->{column})),
+          $self->term(qw(references)),
+          sprintf('%s (%s)',
+          $self->table($foreign->{reference}),
+          $self->name($foreign->{reference}{column})),
+          (
+          $foreign->{on}{delete}
+          ? (
+            $self->term(qw(on delete)),
+            $self->constraint_option($foreign->{on}{delete})
+            )
+          : ()
+          ),
+          (
+          $foreign->{on}{update}
+          ? (
+            $self->term(qw(on update)),
+            $self->constraint_option($foreign->{on}{update})
+            )
+          : ()
+          );
+      }
+    }
+  }
+
+  # definition
+  if (@$body) {
+    push @$sql, sprintf('(%s)', join ', ', @$body);
   }
 
   # query
