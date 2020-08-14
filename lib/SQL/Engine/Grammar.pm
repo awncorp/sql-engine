@@ -401,6 +401,12 @@ method delete(HashRef $data) {
       join(sprintf(' %s ', $self->term('and')), @{$self->criteria($where)});
   }
 
+  # returning (postgres)
+  if (my $returning = $data->{returning}) {
+    push @$sql, $self->term('returning'),
+      sprintf('(%s)', join(', ', map $self->expression($_), @$returning));
+  }
+
   # sql statement
   my $result = join ' ', @$sql;
 
@@ -807,6 +813,12 @@ method insert(HashRef $data) {
   # default
   if ($data->{default} && !$data->{values} && !$data->{values}) {
     push @$sql, $self->term('default'), $self->term('values');
+  }
+
+  # returning (postgres)
+  if (my $returning = $data->{returning}) {
+    push @$sql, $self->term('returning'),
+      sprintf('(%s)', join(', ', map $self->expression($_), @$returning));
   }
 
   # sql statement
@@ -1364,6 +1376,12 @@ method update(HashRef $data) {
   if (my $where = $data->{where}) {
     push @$sql, $self->term('where'),
       join(sprintf(' %s ', $self->term('and')), @{$self->criteria($where)});
+  }
+
+  # returning (postgres)
+  if (my $returning = $data->{returning}) {
+    push @$sql, $self->term('returning'),
+      sprintf('(%s)', join(', ', map $self->expression($_), @$returning));
   }
 
   # sql statement

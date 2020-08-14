@@ -37,6 +37,12 @@ has where => (
   opt => 1
 );
 
+has returning => (
+  is => 'ro',
+  isa => 'ArrayRef[HashRef]',
+  opt => 1
+);
+
 # METHODS
 
 method data() {
@@ -52,6 +58,10 @@ method data() {
 
   if ($self->where) {
     $schema->{"where"} = $self->where;
+  }
+
+  if ($self->returning) {
+    $schema->{"returning"} = $self->returning;
   }
 
   return {
