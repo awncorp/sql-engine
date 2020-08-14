@@ -371,6 +371,13 @@ method criterion(HashRef $data) {
     return sprintf '%s != %s', map $self->expression($_), @$cond;
   }
 
+  if (my $cond = $data->{"not"}) {
+    return sprintf 'NOT (%s)',
+      (ref($cond) eq 'HASH')
+        ? $self->expression($cond)
+        : join(sprintf(' %s ', $self->term('and')), @{$self->criteria($cond)});
+  }
+
   if (my $cond = $data->{"not-null"}) {
     return sprintf '%s IS NOT NULL', $self->expression($cond);
   }
