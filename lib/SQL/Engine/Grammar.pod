@@ -922,7 +922,7 @@ transaction.
     }
   });
 
-  $grammar->column_change($grammar->schema->{'transaction'});
+  $grammar->transaction($grammar->schema->{'transaction'});
 
 =back
 
