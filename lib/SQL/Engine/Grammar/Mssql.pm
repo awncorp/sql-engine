@@ -238,7 +238,7 @@ method select(HashRef $data) {
   # joins
   if (my $joins = $data->{joins}) {
     for my $join (@$joins) {
-      push @$sql, $self->term('join'), $self->table($join->{with});
+      push @$sql, $self->join_option($join->{type}), $self->table($join->{with});
       push @$sql, $self->term('on'),
         join(
         sprintf(' %s ', $self->term('and')),
