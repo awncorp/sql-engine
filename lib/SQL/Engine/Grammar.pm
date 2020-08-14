@@ -61,8 +61,27 @@ method binding(Str $name) {
 }
 
 method column_change(HashRef $data) {
+  my $sql = [];
 
-  return $self;
+  # alter table
+  push @$sql, $self->term(qw(alter table));
+
+  # safe
+  push @$sql, $self->term(qw(if exists)) if $data->{safe};
+
+  # for
+  push @$sql, $self->table($data->{for});
+
+  # column
+  push @$sql, $self->term(qw(alter column));
+
+  # column specification
+  push @$sql, $self->column_specification($data->{column});
+
+  # sql statement
+  my $result = join ' ', @$sql;
+
+  return $self->operation($result);
 }
 
 method column_create(HashRef $data) {
@@ -848,6 +867,11 @@ method select(HashRef $data) {
   # columns
   if (my $columns = $data->{columns}) {
     push @$sql, join(', ', map $self->expression($_), @$columns);
+  }
+
+  # into (mssql)
+  if (my $into = $data->{into}) {
+    push @$sql, $self->term('into'), $self->name($into);
   }
 
   # from

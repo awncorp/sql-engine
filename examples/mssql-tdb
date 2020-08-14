@@ -14,12 +14,16 @@ my $sql = SQL::Engine->new(
   validator => undef,
 );
 
+# $ENV{TESTDB_ODBCDSN}  = 'XXXXXXXXXX';
+# $ENV{TESTDB_PASSWORD} = 'XXXXXXXXXX';
+
 my $testdb = Test::DB->new;
 my $mysql = $testdb->create(
   database => 'mssql',
 );
 
 my $dbh = $mysql->dbh;
+my @tmp;
 
 say "using @{[$mysql->dsn]}\n";
 
@@ -105,8 +109,8 @@ $sql->schema_drop(
 );
 
 while (my $op = $sql->operations->pull) {
-  say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  say '[NO SUPPORT] ', $op->statement;
+  # $dbh->prepare($op->statement)->execute;
 }
 
 # table-create operations
@@ -213,10 +217,6 @@ $sql->table_create(
   temp => 1
 );
 
-$sql->table_drop(
-  name => 'users',
-);
-
 $dbh->begin_work;
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
@@ -320,8 +320,8 @@ $sql->table_drop(
 
 $dbh->begin_work;
 while (my $op = $sql->operations->pull) {
-  say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  say '[NO SUPPORT] ', $op->statement;
+  # $dbh->prepare($op->statement)->execute;
 }
 $dbh->rollback;
 
@@ -459,7 +459,7 @@ $sql->column_create(
     type => 'datetime',
     nullable => 1,
     default => {
-      function => ['now']
+      function => ['getdate']
     }
   }
 );
@@ -536,9 +536,6 @@ $sql->column_create(
     name => 'accessed',
     type => 'datetime',
     nullable => 1,
-    default => {
-      function => ['now']
-    }
   }
 );
 
@@ -584,7 +581,7 @@ $sql->column_create(
     type => 'datetime',
     nullable => 1,
     default => {
-      function => ['now']
+      function => ['getdate']
     }
   }
 );
@@ -660,8 +657,12 @@ $sql->table_drop(
 
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  push @tmp, $op->statement;
 }
+$dbh->begin_work;
+$dbh->prepare(join '; ', @tmp)->execute;
+$dbh->commit;
+$#tmp = -1;
 
 # * change type, default
 #
@@ -701,7 +702,7 @@ $sql->column_change(
   column => {
     name => 'deleted',
     type => 'datetime',
-    default => { function => ['now'] }
+    default => { function => ['getdate'] }
   }
 );
 
@@ -711,8 +712,12 @@ $sql->table_drop(
 
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  push @tmp, $op->statement;
 }
+$dbh->begin_work;
+$dbh->prepare(join '; ', @tmp)->execute;
+$dbh->commit;
+$#tmp = -1;
 
 # * change type, nullable default
 #
@@ -752,7 +757,7 @@ $sql->column_change(
   column => {
     name => 'deleted',
     type => 'datetime',
-    default => { function => ['now'] },
+    default => { function => ['getdate'] },
     nullable => 1,
   }
 );
@@ -763,8 +768,12 @@ $sql->table_drop(
 
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  push @tmp, $op->statement;
 }
+$dbh->begin_work;
+$dbh->prepare(join '; ', @tmp)->execute;
+$dbh->commit;
+$#tmp = -1;
 
 # constraint-create operations
 
@@ -1497,8 +1506,12 @@ $sql->transaction(
 
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  push @tmp, $op->statement;
 }
+$dbh->begin_work;
+$dbh->prepare(join '; ', @tmp)->execute;
+$dbh->commit;
+$#tmp = -1;
 
 # * transaction mode
 #
@@ -1508,8 +1521,6 @@ while (my $op = $sql->operations->pull) {
 
 $sql->transaction(
   mode => [
-    'isolation',
-    'level',
     'serializable',
   ],
   queries => [
@@ -1552,8 +1563,12 @@ $sql->transaction(
 
 while (my $op = $sql->operations->pull) {
   say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  push @tmp, $op->statement;
 }
+$dbh->begin_work;
+$dbh->prepare(join '; ', @tmp)->execute;
+$dbh->commit;
+$#tmp = -1;
 
 # view-create operations
 
@@ -1691,8 +1706,8 @@ $sql->table_drop(
 
 $dbh->begin_work;
 while (my $op = $sql->operations->pull) {
-  say '[MSSQL] ', $op->statement;
-  $dbh->prepare($op->statement)->execute;
+  say '[NO SUPPORT] ', $op->statement;
+  # $dbh->prepare($op->statement)->execute;
 }
 $dbh->rollback;
 
@@ -1779,7 +1794,6 @@ $sql->table_create(
     {
       name => 'id',
       type => 'integer',
-      increment => 1,
       primary => 1
     },
     {
@@ -1814,17 +1828,17 @@ $sql->insert(
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     }
   ]
@@ -1879,9 +1893,6 @@ $sql->insert(
   },
   columns => [
     {
-      column => 'id'
-    },
-    {
       column => 'name'
     },
     {
@@ -1896,24 +1907,21 @@ $sql->insert(
   ],
   values => [
     {
-      value => 1
-    },
-    {
       value => 'Rob Zombie'
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     },
     {
       value => {
-        function => ['now']
+        function => ['getdate']
       }
     }
   ]
@@ -1940,6 +1948,7 @@ $sql->table_create(
     {
       name => 'id',
       type => 'integer',
+      increment => 1,
       primary => 1
     },
     {
@@ -1974,8 +1983,8 @@ $sql->table_drop(
 
 $dbh->begin_work;
 while (my $op = $sql->operations->pull) {
-  say '[NO SUPPORT] ', $op->statement;
-  # $dbh->prepare($op->statement)->execute;
+  say '[MSSQL] ', $op->statement;
+  $dbh->prepare($op->statement)->execute;
 }
 $dbh->rollback;
 
@@ -2214,7 +2223,7 @@ $sql->update(
   columns => [
     {
       column => 'updated',
-      value => { function => ['now'] }
+      value => { function => ['getdate'] }
     }
   ]
 );
@@ -2346,13 +2355,11 @@ $sql->table_create(
 $sql->update(
   for => {
     table => 'users',
-    alias => 'u1'
   },
   columns => [
     {
       column => 'updated',
-      alias => 'u1',
-      value => { function => ['now'] }
+      value => { function => ['getdate'] }
     }
   ],
   where => [
@@ -2360,7 +2367,6 @@ $sql->update(
       in => [
         {
           column => 'id',
-          alias => 'u1'
         },
         {
           subquery => {
@@ -2404,9 +2410,7 @@ $sql->update(
                       column => 'id',
                       alias => 'u2'
                     },
-                    {
-                      binding => 'user_id'
-                    }
+                    123
                   ]
                 }
               ]
@@ -2428,8 +2432,8 @@ $sql->table_drop(
 
 $dbh->begin_work;
 while (my $op = $sql->operations->pull) {
-  say '[NO SUPPORT] ', $op->statement;
-  # $dbh->prepare($op->statement)->execute;
+  say '[MSSQL] ', $op->statement;
+  $dbh->prepare($op->statement)->execute;
 }
 $dbh->rollback;
 
@@ -3058,6 +3062,11 @@ $sql->select(
       column => '*'
     }
   ],
+  order_by => [
+    {
+      column => 'id'
+    }
+  ],
   rows => {
     limit => 5
   }
@@ -3108,6 +3117,11 @@ $sql->select(
   columns => [
     {
       column => '*'
+    }
+  ],
+  order_by => [
+    {
+      column => 'id'
     }
   ],
   rows => {
