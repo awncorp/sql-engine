@@ -914,7 +914,7 @@ transaction(HashRef $data) : Object
     }
   });
 
-  $grammar->column_change($grammar->schema->{'transaction'});
+  $grammar->transaction($grammar->schema->{'transaction'});
 
 =cut
 

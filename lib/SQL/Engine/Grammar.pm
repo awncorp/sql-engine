@@ -1047,6 +1047,7 @@ method term(Str @args) {
 }
 
 method transaction(HashRef $data) {
+  $DB::single=1;
   $self->operation($self->term('begin', 'transaction'));
   $self->process($_) for @{$data->{queries}};
   $self->operation($self->term('commit'));
