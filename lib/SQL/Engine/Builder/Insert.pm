@@ -49,6 +49,12 @@ has default => (
   opt => 1
 );
 
+has returning => (
+  is => 'ro',
+  isa => 'ArrayRef[HashRef]',
+  opt => 1
+);
+
 # METHODS
 
 method data() {
@@ -72,6 +78,10 @@ method data() {
 
   if ($self->default) {
     $schema->{"default"} = $self->default;
+  }
+
+  if ($self->returning) {
+    $schema->{"returning"} = $self->returning;
   }
 
   return {
