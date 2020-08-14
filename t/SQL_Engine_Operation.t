@@ -15,7 +15,7 @@ SQL::Engine::Operation
 
 =tagline
 
-SQL Statement Operation
+SQL Operation
 
 =cut
 
