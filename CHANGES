@@ -1,1 +1,17 @@
 Changelog for SQL-Engine
+
+0.02 2020-08-14T22:49:01
+ - Add release updates
+ - Implement additional join types (#16)
+ - Implement boolean column criterion (#15)
+ - Implement expression/criteria negation (#14)
+ - Implement support for inline constraints on create-table (#12)
+ - Implement support for returning after mutation (#13)
+ - Address MSSQL SQL syntax errors (#11)
+
+0.01 2020-08-12T04:08:31
+ - Built release version 0.01
+ - Add release updates
+ - Prepare initial release
+ - Initial implementation (#2)
+ - Initial commit
