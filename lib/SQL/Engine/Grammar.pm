@@ -575,6 +575,24 @@ method expression(Any $data) {
   }
 }
 
+method join_option(Maybe[Str] $name) {
+  if (lc($name) eq "left-join") {
+    return $self->term(qw(left join));
+  }
+  elsif (lc($name) eq "right-join") {
+    return $self->term(qw(right join));
+  }
+  elsif (lc($name) eq "full-join") {
+    return $self->term(qw(full join));
+  }
+  elsif (lc($name) eq "inner-join") {
+    return $self->term(qw(inner join));
+  }
+  else {
+    return $self->term(qw(join));
+  }
+}
+
 method name(Any @args) {
 
   return join '.', map { /\W/ ? $_ : $self->wrap($_) } grep {defined} @args;
@@ -909,7 +927,7 @@ method select(HashRef $data) {
   # joins
   if (my $joins = $data->{joins}) {
     for my $join (@$joins) {
-      push @$sql, $self->term('join'), $self->table($join->{with});
+      push @$sql, $self->join_option($join->{type}), $self->table($join->{with});
       push @$sql, $self->term('on'),
         join(
         sprintf(' %s ', $self->term('and')),
