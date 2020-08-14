@@ -350,6 +350,13 @@ method criterion(HashRef $data) {
       @$cond[1 .. $#$cond];
   }
 
+  if (my $cond = $data->{"is"}) {
+    return sprintf '(%s)',
+      (ref($cond) eq 'HASH')
+        ? $self->expression($cond)
+        : join(sprintf(' %s ', $self->term('and')), @{$self->criteria($cond)});
+  }
+
   if (my $cond = $data->{"is-null"}) {
     return sprintf '%s IS NULL', $self->expression($cond);
   }
