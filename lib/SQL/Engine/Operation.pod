@@ -3,7 +3,7 @@
 
 =head1 NAME
 
-SQL::Engine::Operation - SQL Statement Operation
+SQL::Engine::Operation - SQL Operation
 
 =cut
 
