@@ -590,6 +590,49 @@ accepted by [SQL::Engine::Builder::Transaction](https://metacpan.org/pod/SQL%3A%
           ]
         );
 
+## union
+
+    union(Any %args) : Object
+
+The union method produces SQL operations which returns a results from two or
+more select queries. The arguments expected are the constructor arguments
+accepted by [SQL::Engine::Builder::Union](https://metacpan.org/pod/SQL%3A%3AEngine%3A%3ABuilder%3A%3AUnion).
+
+- union example #1
+
+        # given: synopsis
+
+        $sql->operations->clear;
+
+        $sql->union(
+          queries => [
+            {
+              select => {
+                from => {
+                  table => 'customers',
+                },
+                columns => [
+                  {
+                    column => 'name',
+                  }
+                ]
+              }
+            },
+            {
+              select => {
+                from => {
+                  table => 'employees',
+                },
+                columns => [
+                  {
+                    column => 'name',
+                  }
+                ]
+              }
+            }
+          ]
+        );
+
 ## update
 
     update(Any %args) : Object
@@ -2107,6 +2150,43 @@ syntax):
 - view-drop example #1 output
 
         # DROP VIEW "active_users"
+
+## union
+
+- union example #1
+
+        $sql->union(
+          queries => [
+            {
+              select => {
+                from => {
+                  table => 'customers',
+                },
+                columns => [
+                  {
+                    column => 'name',
+                  }
+                ]
+              }
+            },
+            {
+              select => {
+                from => {
+                  table => 'employees',
+                },
+                columns => [
+                  {
+                    column => 'name',
+                  }
+                ]
+              }
+            }
+          ]
+        );
+
+- union example #1 output
+
+        # (SELECT "name" FROM "customers") UNION (SELECT "name" FROM "employees")
 
 # AUTHOR
 
