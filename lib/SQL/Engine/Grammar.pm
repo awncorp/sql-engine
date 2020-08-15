@@ -576,6 +576,9 @@ method expression(Any $data) {
 }
 
 method join_option(Maybe[Str] $name) {
+  if (!$name) {
+    return $self->term(qw(join));
+  }
   if (lc($name) eq "left-join") {
     return $self->term(qw(left join));
   }
