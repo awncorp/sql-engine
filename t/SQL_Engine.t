@@ -50,6 +50,7 @@ method: transaction
 method: update
 method: view_create
 method: view_drop
+method: union
 
 =cut
 
@@ -796,6 +797,53 @@ view_drop(Any %args) : Object
 
 =cut
 
+=method union
+
+The union method produces SQL operations which returns a results from two or
+more select queries. The arguments expected are the constructor arguments
+accepted by L<SQL::Engine::Builder::Union>.
+
+=signature union
+
+union(Any %args) : Object
+
+=example-1 union
+
+  # given: synopsis
+
+  $sql->operations->clear;
+
+  $sql->union(
+    queries => [
+      {
+        select => {
+          from => {
+            table => 'customers',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      },
+      {
+        select => {
+          from => {
+            table => 'employees',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=cut
+
 package main;
 
 my $test = testauto(__FILE__);
@@ -947,6 +995,12 @@ $subs->example(-1, 'view_create', 'method', fun($tryable) {
 });
 
 $subs->example(-1, 'view_drop', 'method', fun($tryable) {
+  ok my $result = $tryable->result;
+
+  $result
+});
+
+$subs->example(-1, 'union', 'method', fun($tryable) {
   ok my $result = $tryable->result;
 
   $result

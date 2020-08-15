@@ -350,4 +350,17 @@ method view_drop(@args) {
   return $self;
 }
 
+method union(@args) {
+  require SQL::Engine::Builder::Union;
+
+  my $grammar = SQL::Engine::Builder::Union->new(@args)->grammar(
+    grammar => $self->grammar,
+    validator => $self->validator
+  );
+
+  $self->operations->push($grammar->execute->operations->list);
+
+  return $self;
+}
+
 1;

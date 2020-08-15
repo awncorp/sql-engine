@@ -1581,6 +1581,49 @@ syntax):
 
 =cut
 
+=head2 union
+
+=over 4
+
+=item union example #1
+
+  $sql->union(
+    queries => [
+      {
+        select => {
+          from => {
+            table => 'customers',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      },
+      {
+        select => {
+          from => {
+            table => 'employees',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=item union example #1 output
+
+  # (SELECT "name" FROM "customers") UNION (SELECT "name" FROM "employees")
+
+=back
+
+=cut
+
 =head1 AUTHOR
 
 Al Newkirk, C<awncorp@cpan.org>
