@@ -751,6 +751,12 @@ method process(HashRef $schema = $self->schema) {
     return $self;
   }
 
+  if ($schema->{"union"}) {
+    $self->union($schema->{"union"});
+
+    return $self;
+  }
+
   return $self;
 }
 
@@ -1155,7 +1161,6 @@ method term(Str @args) {
 }
 
 method transaction(HashRef $data) {
-  $DB::single=1;
   $self->operation($self->term('begin', 'transaction'));
   $self->process($_) for @{$data->{queries}};
   $self->operation($self->term('commit'));
@@ -1554,6 +1559,31 @@ method view_drop(HashRef $data) {
 
   # sql statement
   my $result = join ' ', @$sql;
+
+  return $self->operation($result);
+}
+
+method union(HashRef $data) {
+  my $sql = [];
+
+  # union
+  my $type = $self->term('union');
+
+  # union type
+  if ($data->{type}) {
+    $type = join ' ', $type, $self->term($data->{type});
+  }
+
+  # union queries
+  for my $query (@{$data->{queries}}) {
+    $self->process($query);
+    my $operation = $self->operations->pop;
+    $self->{bindings} = $operation->bindings;
+    push @$sql, sprintf('(%s)', $operation->statement);
+  }
+
+  # sql statement
+  my $result = join " $type ", @$sql;
 
   return $self->operation($result);
 }
