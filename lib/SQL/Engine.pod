@@ -737,6 +737,55 @@ accepted by L<SQL::Engine::Builder::Transaction>.
 
 =cut
 
+=head2 union
+
+  union(Any %args) : Object
+
+The union method produces SQL operations which returns a results from two or
+more select queries. The arguments expected are the constructor arguments
+accepted by L<SQL::Engine::Builder::Union>.
+
+=over 4
+
+=item union example #1
+
+  # given: synopsis
+
+  $sql->operations->clear;
+
+  $sql->union(
+    queries => [
+      {
+        select => {
+          from => {
+            table => 'customers',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      },
+      {
+        select => {
+          from => {
+            table => 'employees',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=back
+
+=cut
+
 =head2 update
 
   update(Any %args) : Object
@@ -2410,6 +2459,49 @@ syntax):
 =item view-drop example #1 output
 
   # DROP VIEW "active_users"
+
+=back
+
+=cut
+
+=head2 union
+
+=over 4
+
+=item union example #1
+
+  $sql->union(
+    queries => [
+      {
+        select => {
+          from => {
+            table => 'customers',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      },
+      {
+        select => {
+          from => {
+            table => 'employees',
+          },
+          columns => [
+            {
+              column => 'name',
+            }
+          ]
+        }
+      }
+    ]
+  );
+
+=item union example #1 output
+
+  # (SELECT "name" FROM "customers") UNION (SELECT "name" FROM "employees")
 
 =back
 
